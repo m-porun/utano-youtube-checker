@@ -1,0 +1,9 @@
+[project]
+name = "utano-checker"
+version = "0.1.0"
+description = "YouTube setlist analyzer"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "python-dotenv>=1.0.1",
+]
