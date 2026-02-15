@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    container_name: utano_youtube_checker
+    volumes:
+      - .:/app
+    environment:
+      - YOUTUBE_API_KEY=${YOUTUBE_API_KEY}
+    tty: true
+    stdin_open: true
