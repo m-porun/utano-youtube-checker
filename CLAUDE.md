@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは、本リポジトリ内のコードを扱う際に、Claude Code（claude.ai/code）が従うべき指針を示しています。
 
 ## Project Overview
 
-YouTube setlist analyzer for 白珠ウタノ (Shiratama Utano) - tracks "六甲おろし" (Rokko Oroshi) performances from a specific YouTube playlist. Uses YouTube Data API v3 to fetch playlist videos and analyze comments.
+白珠ウタノ(Shiratama Utano)のYouTubeチャンネル[UTANO ch. 白玖ウタノ](https://www.youtube.com/@UTANOch)で、再生リストの中に[歌枠/KARAOKE](https://www.youtube.com/playlist?list=PLUi5gdZovvGlyVfVOyzmgOwZ8jd0bT2mS)があります。
+各動画にコメントされている「Set List」から、「六甲おろし」がある回数を数えWebページに表示することを目的としています。
+つまり、これまで白珠ウタノが「六甲おろし」を歌った数をコメントの中から判断して表示したいということです。
 
 ## Tech Stack
 
@@ -31,8 +33,8 @@ docker compose exec app python check_youtube_utano.py
 
 ## Environment
 
-Requires a `.env` file with `YOUTUBE_API_KEY` set. The `.env` file is gitignored.
+`YOUTUBE_API_KEY`が設定された`.env`ファイルが必要です。`.env`ファイルはGitとClaudeの管理対象外です。
 
 ## Architecture
 
-Single-script application (`check_youtube_utano.py`) that connects to the YouTube Data API using an API key. The target playlist is hardcoded as `PLUi5gdZovvGlyVfVOyzmgOwZ8jd0bT2mS`. The project is in early development — the script currently only validates API key connectivity.
+APIキーを使ってYouTube Data APIに接続する単一スクリプトのアプリケーション（`check_youtube_utano.py`）です。対象プレイリストは`PLUi5gdZovvGlyVfVOyzmgOwZ8jd0bT2mS`としてハードコードされています。このプロジェクトはまだ開発の初期段階にあり、スクリプトは現在、APIキーの接続性検証のみを行っています。
