@@ -5,13 +5,14 @@ from dotenv import load_dotenv
 # .envファイルを読み込み
 load_dotenv()
 
+# 白珠ウタノの再生リスト「歌枠/KARAOKE」を取得
 API_KEY = os.getenv("YOUTUBE_API_KEY")
 PLAYLIST_ID = "PLUi5gdZovvGlyVfVOyzmgOwZ8jd0bT2mS"
 YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v="
 
 
 def fetch_all_playlist_items(youtube, playlist_id):
-    """再生リストの全動画を取得する（ページネーション対応）"""
+    """再生リストの全動画を取得する"""
     videos = []
     next_page_token = None
 
