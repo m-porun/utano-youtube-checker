@@ -45,8 +45,8 @@ YouTubeの特定再生リストを全件走査し、VTuber「白珠ウタノ」�
 
 #### 2-2. アクセス可否の確認
 
-- タイトルが `Private video` として返ってきた動画はスキップする
-- ただしその場合も `VideoTitle` に `Private video`、`VideoLink` に動画URLを記録し、後述のCSV出力（Step 3）は実行する
+- タイトルが `Private video` として返ってきた動画、またはコメント取得時に権限エラー（403）が発生した動画はスキップする
+- ただしその場合も `VideoLink` に動画URLを記録し、後述のCSV出力（Step 3）は実行する（`VideoTitle` はタイトル取得不可のため null）
 
 #### 2-3. 基本情報の取得
 
