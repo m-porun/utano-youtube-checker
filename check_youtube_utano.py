@@ -82,6 +82,25 @@ def extract_setlist(comments):
     return candidates[0][0]
 
 
+def count_rokko(setlist):
+    """セットリストをタイムスタンプで曲単位に分割し、六甲おろしをカウントする。
+    戻り値: [(rokko_no, timestamp), ...] のリスト。見つからなければ空リスト。
+    """
+    parts = re.split(r"(\d{1,2}:\d{2}:\d{2})", setlist)
+
+    results = []
+    rokko_count = 0
+    # partsは [前テキスト, timestamp1, テキスト1, timestamp2, テキスト2, ...] の形式
+    for j in range(1, len(parts) - 1, 2):
+        timestamp = parts[j]
+        song_text = parts[j + 1] if j + 1 < len(parts) else ""
+        if "六甲おろし" in song_text:
+            rokko_count += 1
+            results.append((rokko_count, timestamp))
+
+    return results
+
+
 def main():
     if not API_KEY:
         print("エラー: YOUTUBE_API_KEY が設定されていません。")
@@ -94,6 +113,8 @@ def main():
 
     videos = fetch_all_playlist_items(youtube, PLAYLIST_ID)
     print(f"取得した動画数: {len(videos)}")
+
+    total_rokko_count = 0
 
     for i, video in enumerate(videos, 1):
         title = video["title"]
@@ -115,8 +136,18 @@ def main():
 
         if setlist == "セットリストなし":
             print("    → セットリストなし")
-        else:
-            print(f"    → セットリスト発見（{len(TIMESTAMP_PATTERN.findall(setlist))}曲）")
+            continue
+
+        print(f"    → セットリスト発見（{len(TIMESTAMP_PATTERN.findall(setlist))}曲）")
+
+        rokko_results = count_rokko(setlist)
+        if rokko_results:
+            total_rokko_count += len(rokko_results)
+            for rokko_no, timestamp in rokko_results:
+                print(f"    ★ 六甲おろし #{rokko_no} @ {timestamp}")
+
+    print(f"\n--- 調査完了 ---")
+    print(f"六甲おろし歌唱総数: {total_rokko_count}")
 
 
 if __name__ == "__main__":
