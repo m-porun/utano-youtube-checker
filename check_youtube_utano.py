@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 # .envファイルを読み込み
 load_dotenv()
 
-# 白珠ウタノの再生リスト「歌枠/KARAOKE」を取得
+# 白珠ウタノのチャンネルからライブ配信を取得
 API_KEY = os.getenv("YOUTUBE_API_KEY")
-PLAYLIST_ID = "PLUi5gdZovvGlyVfVOyzmgOwZ8jd0bT2mS"
+CHANNEL_ID = "UCNskpCCH661BeRJkN8n8d-A"
+UPLOADS_PLAYLIST_ID = "UUNskpCCH661BeRJkN8n8d-A"  # UCをUUに置き換え
 YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v="
 SETLIST_KEYWORDS = re.compile(
     r"セトリ|セットリスト|set\s*list|setlist|タイムスタンプ|TS", re.IGNORECASE
@@ -17,14 +18,14 @@ SETLIST_KEYWORDS = re.compile(
 TIMESTAMP_PATTERN = re.compile(r"\d{1,2}:\d{2}:\d{2}")
 
 
-def fetch_all_playlist_items(youtube, playlist_id):
-    """再生リストの全動画を取得する"""
+def fetch_all_uploads(youtube):
+    """アップロード再生リスト（UU...）から全動画を取得する"""
     videos = []
     next_page_token = None
 
     while True:
         request = youtube.playlistItems().list(
-            playlistId=playlist_id,
+            playlistId=UPLOADS_PLAYLIST_ID,
             part="snippet",
             maxResults=50,
             pageToken=next_page_token,
@@ -45,6 +46,32 @@ def fetch_all_playlist_items(youtube, playlist_id):
             break
 
     return videos
+
+
+def filter_live_videos(youtube, videos):
+    """videos.list で liveStreamingDetails の有無を確認し、ライブ配信のみ返す（50件ずつバッチ処理）"""
+    live_videos = []
+
+    for i in range(0, len(videos), 50):
+        batch = videos[i:i + 50]
+        video_ids = [v["video_id"] for v in batch]
+
+        request = youtube.videos().list(
+            id=",".join(video_ids),
+            part="liveStreamingDetails",
+        )
+        response = request.execute()
+
+        live_ids = set()
+        for item in response["items"]:
+            if "liveStreamingDetails" in item:
+                live_ids.add(item["id"])
+
+        for v in batch:
+            if v["video_id"] in live_ids:
+                live_videos.append(v)
+
+    return live_videos
 
 
 def fetch_comments(youtube, video_id):
@@ -109,10 +136,13 @@ def main():
     youtube = build('youtube', 'v3', developerKey=API_KEY)
 
     print("--- 調査開始 ---")
-    print(f"対象プレイリストID: {PLAYLIST_ID}")
+    print(f"対象チャンネルID: {CHANNEL_ID}")
 
-    videos = fetch_all_playlist_items(youtube, PLAYLIST_ID)
-    print(f"取得した動画数: {len(videos)}")
+    all_videos = fetch_all_uploads(youtube)
+    print(f"アップロード動画数: {len(all_videos)}")
+
+    videos = filter_live_videos(youtube, all_videos)
+    print(f"ライブ配信動画数: {len(videos)}")
 
     total_rokko_count = 0
 

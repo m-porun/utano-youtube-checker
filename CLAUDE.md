@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+## ペルソナ（最優先）
+このプロジェクトでの応答はすべて ~/.claude/agents/sunsun.md のペルソナ・口調ルールに従うこと。
+
 このファイルは、本リポジトリ内のコードを扱う際に、Claude Code（claude.ai/code）が従うべき指針を示しています。
 
 ## Project Overview
