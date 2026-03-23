@@ -14,4 +14,4 @@ COPY . .
 
 # PATHを通してコンテナ起動時に実行
 ENV PATH="/app/.venv/bin:$PATH"
-CMD ["python", "check_youtube_utano.py"]
+CMD ["sleep", "infinity"]
