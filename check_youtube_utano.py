@@ -1,3 +1,4 @@
+import csv
 import os
 import re
 from googleapiclient.discovery import build
@@ -16,6 +17,7 @@ SETLIST_KEYWORDS = re.compile(
     r"セトリ|セットリスト|set\s*list|setlist|タイムスタンプ|TS", re.IGNORECASE
 )
 TIMESTAMP_PATTERN = re.compile(r"\d{1,2}:\d{2}:\d{2}")
+OUTPUT_CSV_PATH = "output/rokko_count.csv"
 
 
 def fetch_all_uploads(youtube):
@@ -109,8 +111,12 @@ def extract_setlist(comments):
     return candidates[0][0]
 
 
+SETLIST_END_KEYWORDS = re.compile(r"配信内容|タイムライン|雑談")
+
+
 def count_rokko(setlist):
     """セットリストをタイムスタンプで曲単位に分割し、六甲おろしをカウントする。
+    「配信内容」「タイムライン」「雑談」が出現したらセトリ終了とみなす。
     戻り値: [(rokko_no, timestamp), ...] のリスト。見つからなければ空リスト。
     """
     parts = re.split(r"(\d{1,2}:\d{2}:\d{2})", setlist)
@@ -121,11 +127,22 @@ def count_rokko(setlist):
     for j in range(1, len(parts) - 1, 2):
         timestamp = parts[j]
         song_text = parts[j + 1] if j + 1 < len(parts) else ""
+        if SETLIST_END_KEYWORDS.search(song_text):
+            break
         if "六甲おろし" in song_text:
             rokko_count += 1
             results.append((rokko_count, timestamp))
 
     return results
+
+
+def write_csv_rows(writer, search_count, title, url, setlist, rokko_count, rokko_results):
+    """CSV にレコードを書き込む。RokkoCount が 1 以上なら件数分、0 なら 1 レコード出力。"""
+    if rokko_count == 0:
+        writer.writerow([search_count, title, url, setlist, 0, None, None])
+    else:
+        for rokko_no, timestamp in rokko_results:
+            writer.writerow([search_count, title, url, setlist, rokko_count, rokko_no, timestamp])
 
 
 def main():
@@ -144,39 +161,56 @@ def main():
     videos = filter_live_videos(youtube, all_videos)
     print(f"ライブ配信動画数: {len(videos)}")
 
+    os.makedirs(os.path.dirname(OUTPUT_CSV_PATH), exist_ok=True)
+    csvfile = open(OUTPUT_CSV_PATH, "w", newline="", encoding="utf-8")
+    writer = csv.writer(csvfile)
+    writer.writerow(["検索件数", "動画タイトル", "動画URL", "セットリスト",
+                      "六甲おろしが歌われた数", "六甲おろし番号", "タイムスタンプ"])
+
     total_rokko_count = 0
+    search_count = 0
 
     for i, video in enumerate(videos, 1):
         title = video["title"]
         url = video["video_url"]
+        search_count += 1
         print(f"\n  [{i}/{len(videos)}] {title}")
         print(f"    {url}")
 
         if title == "Private video":
             print(f"    → Private video のためスキップ（URL: {url}）")
+            write_csv_rows(writer, search_count, None, url, None, 0, [])
             continue
 
         try:
             comments = fetch_comments(youtube, video["video_id"])
         except HttpError:
             print("    → コメント取得不可のためスキップ")
+            write_csv_rows(writer, search_count, None, url, None, 0, [])
             continue
 
         setlist = extract_setlist(comments)
 
         if setlist == "セットリストなし":
             print("    → セットリストなし")
+            write_csv_rows(writer, search_count, title, url, setlist, 0, [])
             continue
 
         print(f"    → セットリスト発見（{len(TIMESTAMP_PATTERN.findall(setlist))}曲）")
 
         rokko_results = count_rokko(setlist)
+        rokko_count = len(rokko_results)
         if rokko_results:
-            total_rokko_count += len(rokko_results)
+            total_rokko_count += rokko_count
             for rokko_no, timestamp in rokko_results:
                 print(f"    ★ 六甲おろし #{rokko_no} @ {timestamp}")
 
-    print(f"\n--- 調査完了 ---")
+        write_csv_rows(writer, search_count, title, url, setlist, rokko_count, rokko_results)
+
+    csvfile.close()
+
+    print(f"\n六甲おろしカウンティングが終了しました。")
+    print(f"CSVファイル: {os.path.abspath(OUTPUT_CSV_PATH)}")
     print(f"六甲おろし歌唱総数: {total_rokko_count}")
 
 
