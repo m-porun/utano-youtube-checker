@@ -17,27 +17,30 @@
 - **google-api-python-client** for YouTube Data API v3
 - **python-dotenv** for environment variable management
 - **Docker** + **docker-compose** for containerized execution
+- **Vite + React + TailwindCSS v4** for the web frontend
+- **Google Apps Script (GAS)** for spreadsheet-to-JSON API
 
 ## Commands
 
 ```bash
-# Install dependencies (local)
-uv sync
+# コンテナ起動
+docker compose up --build -d
 
-# Run the main script (local)
-uv run python check_youtube_utano.py
-
-# Docker build and run
-docker compose up --build
-
-# Run in existing container
+# データ収集（CSV出力）
 docker compose exec app python check_youtube_utano.py
+
+# Webアプリ dev サーバー起動
+docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run dev
+
+# Webアプリ ビルド
+docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run build
 ```
 
 ## Environment
 
-`YOUTUBE_API_KEY`が設定された`.env`ファイルが必要です。`.env`ファイルはGitとClaudeの管理対象外です。
+- `YOUTUBE_API_KEY`: YouTube Data API v3 のAPIキー。`.env`ファイルに設定（Git管理外）
+- `VITE_GAS_URL`: GAS WebアプリのURL。devサーバー起動時に環境変数で渡す
 
 ## Architecture
 
-APIキーを使ってYouTube Data APIに接続する単一スクリプトのアプリケーション（`check_youtube_utano.py`）です。対象プレイリストは`PLUi5gdZovvGlyVfVOyzmgOwZ8jd0bT2mS`としてハードコードされています。このプロジェクトはまだ開発の初期段階にあり、スクリプトは現在、APIキーの接続性検証のみを行っています。
+Python スクリプト（`check_youtube_utano.py`）でYouTube APIからライブ配信のコメントを取得し、セットリストから「六甲おろし」を検出してCSVに出力する。CSVはGoogle スプレッドシートで人間がチェックし、GAS経由でJSON APIとして公開。Webアプリ（`web/`）がGASからデータを取得して表示する。
