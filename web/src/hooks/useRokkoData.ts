@@ -11,7 +11,10 @@ export function useRokkoData() {
 
   useEffect(() => {
     fetch(GAS_URL)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then((json: ApiResponse) => setData(json))
       .catch((err: unknown) =>
         setError(err instanceof Error ? err : new Error(String(err))),

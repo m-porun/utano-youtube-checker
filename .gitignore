@@ -5,6 +5,7 @@ output/*.csv
 
 # web
 web/node_modules/
+web/.vite/
 web/dist/
 web/dist-ssr/
 web/.env
