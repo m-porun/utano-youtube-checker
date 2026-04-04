@@ -162,52 +162,51 @@ def main():
     print(f"ライブ配信動画数: {len(videos)}")
 
     os.makedirs(os.path.dirname(OUTPUT_CSV_PATH), exist_ok=True)
-    csvfile = open(OUTPUT_CSV_PATH, "w", newline="", encoding="utf-8")
-    writer = csv.writer(csvfile)
-    writer.writerow(["検索件数", "動画タイトル", "動画URL", "セットリスト",
-                      "六甲おろしが歌われた数", "六甲おろし番号", "タイムスタンプ"])
 
     total_rokko_count = 0
     search_count = 0
 
-    for i, video in enumerate(videos, 1):
-        title = video["title"]
-        url = video["video_url"]
-        search_count += 1
-        print(f"\n  [{i}/{len(videos)}] {title}")
-        print(f"    {url}")
+    with open(OUTPUT_CSV_PATH, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(["検索件数", "動画タイトル", "動画URL", "セットリスト",
+                          "六甲おろしが歌われた数", "六甲おろし番号", "タイムスタンプ"])
 
-        if title == "Private video":
-            print(f"    → Private video のためスキップ（URL: {url}）")
-            write_csv_rows(writer, search_count, None, url, None, 0, [])
-            continue
+        for i, video in enumerate(videos, 1):
+            title = video["title"]
+            url = video["video_url"]
+            search_count += 1
+            print(f"\n  [{i}/{len(videos)}] {title}")
+            print(f"    {url}")
 
-        try:
-            comments = fetch_comments(youtube, video["video_id"])
-        except HttpError:
-            print("    → コメント取得不可のためスキップ")
-            write_csv_rows(writer, search_count, None, url, None, 0, [])
-            continue
+            if title == "Private video":
+                print(f"    → Private video のためスキップ（URL: {url}）")
+                write_csv_rows(writer, search_count, None, url, None, 0, [])
+                continue
 
-        setlist = extract_setlist(comments)
+            try:
+                comments = fetch_comments(youtube, video["video_id"])
+            except HttpError:
+                print("    → コメント取得不可のためスキップ")
+                write_csv_rows(writer, search_count, None, url, None, 0, [])
+                continue
 
-        if setlist == "セットリストなし":
-            print("    → セットリストなし")
-            write_csv_rows(writer, search_count, title, url, setlist, 0, [])
-            continue
+            setlist = extract_setlist(comments)
 
-        print(f"    → セットリスト発見（{len(TIMESTAMP_PATTERN.findall(setlist))}曲）")
+            if setlist == "セットリストなし":
+                print("    → セットリストなし")
+                write_csv_rows(writer, search_count, title, url, setlist, 0, [])
+                continue
 
-        rokko_results = count_rokko(setlist)
-        rokko_count = len(rokko_results)
-        if rokko_results:
-            total_rokko_count += rokko_count
-            for rokko_no, timestamp in rokko_results:
-                print(f"    ★ 六甲おろし #{rokko_no} @ {timestamp}")
+            print(f"    → セットリスト発見（{len(TIMESTAMP_PATTERN.findall(setlist))}曲）")
 
-        write_csv_rows(writer, search_count, title, url, setlist, rokko_count, rokko_results)
+            rokko_results = count_rokko(setlist)
+            rokko_count = len(rokko_results)
+            if rokko_results:
+                total_rokko_count += rokko_count
+                for rokko_no, timestamp in rokko_results:
+                    print(f"    ★ 六甲おろし #{rokko_no} @ {timestamp}")
 
-    csvfile.close()
+            write_csv_rows(writer, search_count, title, url, setlist, rokko_count, rokko_results)
 
     print(f"\n六甲おろしカウンティングが終了しました。")
     print(f"CSVファイル: {os.path.abspath(OUTPUT_CSV_PATH)}")

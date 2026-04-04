@@ -8,6 +8,13 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ video }: VideoCardProps) {
+  // videoId は YouTube の仕様上 [A-Za-z0-9_-]{11} であることをバリデーション
+  const safeVideoId = /^[A-Za-z0-9_-]{11}$/.test(video.videoId)
+    ? video.videoId
+    : "";
+
+  if (!safeVideoId) return null;
+
   return (
     <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div className="p-4 sm:p-6">
@@ -20,12 +27,12 @@ export default function VideoCard({ video }: VideoCardProps) {
           </span>
         </div>
         <div className="mb-4">
-          <TimestampList videoId={video.videoId} timestamps={video.timestamps} />
+          <TimestampList videoId={safeVideoId} timestamps={video.timestamps} />
         </div>
       </div>
       <div className="aspect-video w-full">
         <iframe
-          src={`https://www.youtube.com/embed/${video.videoId}${video.timestamps.length > 0 ? `?start=${toSeconds(video.timestamps[0])}` : ""}`}
+          src={`https://www.youtube.com/embed/${safeVideoId}${video.timestamps.length > 0 ? `?start=${toSeconds(video.timestamps[0])}` : ""}`}
           title={video.title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
