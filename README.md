@@ -1,6 +1,6 @@
 # utano-youtube-checker
 
-白珠ウタノ - 六甲おろしカウンター
+白玖ウタノ - 六甲おろしカウンター
 
 VTuber「[白玖ウタノ](https://www.youtube.com/@UTANOch)」がライブ配信で「六甲おろし」を歌った回数をカウントし、Webページで公開するプロジェクト。
 
@@ -102,6 +102,23 @@ docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run build
 ```
 
 `web/dist/` にビルド成果物が出力される。
+
+### 5. lint・テスト
+
+依存関係をインストール済みの環境で、次を実行する。
+
+```bash
+# Python
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+
+# Web
+cd web
+npm run lint
+npm run typecheck
+npm test
+```
 
 ## データ更新フロー
 
