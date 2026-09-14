@@ -7,8 +7,8 @@
 
 ## Project Overview
 
-白玖ウタノ(Shiratama Utano)のYouTubeチャンネル[UTANO ch. 白玖ウタノ](https://www.youtube.com/@UTANOch)で、再生リストの中に[歌枠/KARAOKE](https://www.youtube.com/playlist?list=PLUi5gdZovvGlyVfVOyzmgOwZ8jd0bT2mS)があります。
-各動画にコメントされている「Set List」から、「六甲おろし」がある回数を数えWebページに表示することを目的としています。
+白玖ウタノ(Shiratama Utano)のYouTubeチャンネル[UTANO ch. 白玖ウタノ](https://www.youtube.com/@UTANOch)の、[公開ライブ配信](https://www.youtube.com/@UTANOch/streams)すべてを対象にします。
+チャンネルのアップロード再生リスト（UU...）から取得した動画のうち、`liveStreamingDetails` を持つライブ配信を抽出し、各配信の人気順上位20件のトップレベルコメントにある「Set List」から「六甲おろし」の回数を数えてWebページに表示します。
 つまり、これまで白玖ウタノが「六甲おろし」を歌った数をコメントの中から判断して表示したいということです。
 
 ## Tech Stack
@@ -61,4 +61,4 @@ cd web && npm test
 
 ## Architecture
 
-Python スクリプト（`check_youtube_utano.py`）でYouTube APIからライブ配信のコメントを取得し、セットリストから「六甲おろし」を検出してCSVに出力する。CSVはGoogle スプレッドシートで人間がチェックし、GAS経由でJSON APIとして公開。Webアプリ（`web/`）がGASからデータを取得して表示する。
+Python スクリプト（`check_youtube_utano.py`）でチャンネルのアップロード再生リストからライブ配信を抽出し、人気順上位20件のトップレベルコメントにあるセットリストから「六甲おろし」を検出してCSVに出力する。CSVはGoogle スプレッドシートで人間がチェックし、GAS経由でJSON APIとして公開。Webアプリ（`web/`）がGASからデータを取得して表示する。
