@@ -1,15 +1,12 @@
 import csv
 import os
 import re
+
+from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from dotenv import load_dotenv
 
-# .envファイルを読み込み
-load_dotenv()
-
-# 白珠ウタノのチャンネルからライブ配信を取得
-API_KEY = os.getenv("YOUTUBE_API_KEY")
+# 白玖ウタノのチャンネルからライブ配信を取得
 CHANNEL_ID = "UCNskpCCH661BeRJkN8n8d-A"
 UPLOADS_PLAYLIST_ID = "UUNskpCCH661BeRJkN8n8d-A"  # UCをUUに置き換え
 YOUTUBE_VIDEO_URL = "https://www.youtube.com/watch?v="
@@ -37,11 +34,13 @@ def fetch_all_uploads(youtube):
         for item in response["items"]:
             snippet = item["snippet"]
             video_id = snippet["resourceId"]["videoId"]
-            videos.append({
-                "title": snippet["title"],
-                "video_id": video_id,
-                "video_url": f"{YOUTUBE_VIDEO_URL}{video_id}",
-            })
+            videos.append(
+                {
+                    "title": snippet["title"],
+                    "video_id": video_id,
+                    "video_url": f"{YOUTUBE_VIDEO_URL}{video_id}",
+                }
+            )
 
         next_page_token = response.get("nextPageToken")
         if not next_page_token:
@@ -51,11 +50,14 @@ def fetch_all_uploads(youtube):
 
 
 def filter_live_videos(youtube, videos):
-    """videos.list で liveStreamingDetails の有無を確認し、ライブ配信のみ返す（50件ずつバッチ処理）"""
+    """ライブ配信だけを返す。
+
+    videos.list で liveStreamingDetails の有無を確認し、50件ずつバッチ処理する。
+    """
     live_videos = []
 
     for i in range(0, len(videos), 50):
-        batch = videos[i:i + 50]
+        batch = videos[i : i + 50]
         video_ids = [v["video_id"] for v in batch]
 
         request = youtube.videos().list(
@@ -94,7 +96,7 @@ def fetch_comments(youtube, video_id):
 
 
 def extract_setlist(comments):
-    """条件A（キーワード）と条件B（タイムスタンプ）を両方満たすコメントを特定する"""
+    """キーワードとタイムスタンプを両方含むコメントを特定する。"""
     candidates = []
     for comment in comments:
         has_keyword = SETLIST_KEYWORDS.search(comment)
@@ -115,7 +117,8 @@ SETLIST_END_KEYWORDS = re.compile(r"配信内容|タイムライン|雑談")
 
 
 def count_rokko(setlist):
-    """セットリストをタイムスタンプで曲単位に分割し、六甲おろしをカウントする。
+    """セットリストを曲単位に分割し、六甲おろしをカウントする。
+
     「配信内容」「タイムライン」「雑談」が出現したらセトリ終了とみなす。
     戻り値: [(rokko_no, timestamp), ...] のリスト。見つからなければ空リスト。
     """
@@ -123,7 +126,7 @@ def count_rokko(setlist):
 
     results = []
     rokko_count = 0
-    # partsは [前テキスト, timestamp1, テキスト1, timestamp2, テキスト2, ...] の形式
+    # parts は [前テキスト, timestamp1, テキスト1, timestamp2, ...] の形式
     for j in range(1, len(parts) - 1, 2):
         timestamp = parts[j]
         song_text = parts[j + 1] if j + 1 < len(parts) else ""
@@ -137,7 +140,10 @@ def count_rokko(setlist):
 
 
 def write_csv_rows(writer, search_count, title, url, setlist, rokko_count, rokko_results):
-    """CSV にレコードを書き込む。RokkoCount が 1 以上なら件数分、0 なら 1 レコード出力。"""
+    """CSV にレコードを書き込む。
+
+    RokkoCount が 1 以上なら件数分、0 なら 1 レコード出力する。
+    """
     if rokko_count == 0:
         writer.writerow([search_count, title, url, setlist, 0, None, None])
     else:
@@ -146,11 +152,13 @@ def write_csv_rows(writer, search_count, title, url, setlist, rokko_count, rokko
 
 
 def main():
-    if not API_KEY:
+    load_dotenv()
+    api_key = os.getenv("YOUTUBE_API_KEY")
+    if not api_key:
         print("エラー: YOUTUBE_API_KEY が設定されていません。")
         return
 
-    youtube = build('youtube', 'v3', developerKey=API_KEY)
+    youtube = build("youtube", "v3", developerKey=api_key)
 
     print("--- 調査開始 ---")
     print(f"対象チャンネルID: {CHANNEL_ID}")
@@ -168,8 +176,17 @@ def main():
 
     with open(OUTPUT_CSV_PATH, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(["検索件数", "動画タイトル", "動画URL", "セットリスト",
-                          "六甲おろしが歌われた数", "六甲おろし番号", "タイムスタンプ"])
+        writer.writerow(
+            [
+                "検索件数",
+                "動画タイトル",
+                "動画URL",
+                "セットリスト",
+                "六甲おろしが歌われた数",
+                "六甲おろし番号",
+                "タイムスタンプ",
+            ]
+        )
 
         for i, video in enumerate(videos, 1):
             title = video["title"]
@@ -197,7 +214,8 @@ def main():
                 write_csv_rows(writer, search_count, title, url, setlist, 0, [])
                 continue
 
-            print(f"    → セットリスト発見（{len(TIMESTAMP_PATTERN.findall(setlist))}曲）")
+            setlist_song_count = len(TIMESTAMP_PATTERN.findall(setlist))
+            print(f"    → セットリスト発見（{setlist_song_count}曲）")
 
             rokko_results = count_rokko(setlist)
             rokko_count = len(rokko_results)
@@ -208,7 +226,7 @@ def main():
 
             write_csv_rows(writer, search_count, title, url, setlist, rokko_count, rokko_results)
 
-    print(f"\n六甲おろしカウンティングが終了しました。")
+    print("\n六甲おろしカウンティングが終了しました。")
     print(f"CSVファイル: {os.path.abspath(OUTPUT_CSV_PATH)}")
     print(f"六甲おろし歌唱総数: {total_rokko_count}")
 

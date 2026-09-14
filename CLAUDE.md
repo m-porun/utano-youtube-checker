@@ -7,9 +7,9 @@
 
 ## Project Overview
 
-白珠ウタノ(Shiratama Utano)のYouTubeチャンネル[UTANO ch. 白玖ウタノ](https://www.youtube.com/@UTANOch)で、再生リストの中に[歌枠/KARAOKE](https://www.youtube.com/playlist?list=PLUi5gdZovvGlyVfVOyzmgOwZ8jd0bT2mS)があります。
-各動画にコメントされている「Set List」から、「六甲おろし」がある回数を数えWebページに表示することを目的としています。
-つまり、これまで白珠ウタノが「六甲おろし」を歌った数をコメントの中から判断して表示したいということです。
+白玖ウタノ(Shiratama Utano)のYouTubeチャンネル[UTANO ch. 白玖ウタノ](https://www.youtube.com/@UTANOch)の、[公開ライブ配信](https://www.youtube.com/@UTANOch/streams)すべてを対象にします。
+チャンネルのアップロード再生リスト（UU...）から取得した動画のうち、`liveStreamingDetails` を持つライブ配信を抽出し、各配信の人気順上位20件のトップレベルコメントにある「Set List」から「六甲おろし」の回数を数えてWebページに表示します。
+つまり、これまで白玖ウタノが「六甲おろし」を歌った数をコメントの中から判断して表示したいということです。
 
 ## Tech Stack
 
@@ -34,7 +34,25 @@ docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run dev
 
 # Webアプリ ビルド
 docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run build
+
+# Python lint・format・テスト
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest
+
+# Web lint・型検査・テスト
+cd web && npm run lint
+cd web && npm run typecheck
+cd web && npm test
 ```
+
+## 役割分担と確認ゲート
+
+- Claude は設計・レビュー、Codex は実装を担当する。
+- 実装前後に変更サマリーを提示し、ユーザーの承認を得る。PR 作成前にも確認する。
+- 外部公開、情報漏えいの可能性がある変更は、必ず事前にユーザーへ確認する。
+- コミットメッセージはペルソナ口調にせず、端的な日本語で記述する。
+- 詳細な開発ルールは [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) を参照する。
 
 ## Environment
 
@@ -43,4 +61,4 @@ docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run build
 
 ## Architecture
 
-Python スクリプト（`check_youtube_utano.py`）でYouTube APIからライブ配信のコメントを取得し、セットリストから「六甲おろし」を検出してCSVに出力する。CSVはGoogle スプレッドシートで人間がチェックし、GAS経由でJSON APIとして公開。Webアプリ（`web/`）がGASからデータを取得して表示する。
+Python スクリプト（`check_youtube_utano.py`）でチャンネルのアップロード再生リストからライブ配信を抽出し、人気順上位20件のトップレベルコメントにあるセットリストから「六甲おろし」を検出してCSVに出力する。CSVはGoogle スプレッドシートで人間がチェックし、GAS経由でJSON APIとして公開。Webアプリ（`web/`）がGASからデータを取得して表示する。
