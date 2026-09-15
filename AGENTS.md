@@ -11,6 +11,8 @@ Codex は実装を担当し、Claude は設計・レビューを担当します�
 - ロジック変更にはテストを追加し、バグ修正では再現テストを先に書く。
 - Secrets、デプロイ、公開範囲、リポジトリ設定の変更はユーザー確認が必要。
 - コミット・push・デプロイはしない。
+- AI エージェントは GitHub の PR・Issue をマージまたはクローズせず、その提案もしない。判断と操作はユーザーが行う。
+- コメントとドキュメントは初めて読む人向けに、現在の仕様と必要な選択理由だけを書く。変更の経緯はコミットメッセージとPR本文に記録する。
 
 ## ローカル確認コマンド
 
@@ -19,8 +21,10 @@ uv run ruff check .
 uv run ruff format --check .
 uv run pytest
 
+uv run python -m collector build-site --out web/public/data/rokko.json
+cd web && npm run build
+
 cd web && npm run lint
 cd web && npm run typecheck
 cd web && npm test
-cd web && VITE_GAS_URL=https://example.invalid npm run build
 ```

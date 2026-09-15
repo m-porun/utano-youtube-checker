@@ -1,136 +1,64 @@
 # utano-youtube-checker
 
-白玖ウタノ - 六甲おろしカウンター
+白玖ウタノの公開ライブ配信における「六甲おろし」歌唱回数を公開する非公式サイトです。
 
-VTuber「[白玖ウタノ](https://www.youtube.com/@UTANOch)」がライブ配信で「六甲おろし」を歌った回数をカウントし、Webページで公開するプロジェクト。
+## データフロー
 
-## 仕組み
-
-```
-1. Python スクリプトで YouTube API からライブ配信のコメントを取得
-2. セットリストコメントから「六甲おろし」を検出し、CSV に出力
-3. CSV を Google スプレッドシートにコピーし、人間の目で正確性をチェック
-4. GAS（Google Apps Script）がスプレッドシートを JSON API として公開
-5. Webアプリ（React）が GAS から データを取得して表示
+```text
+GitHub Actions（毎日 JST 06:00）→ YouTube Data API v3 → data/counts.json
+                                                ↓（変更時だけ）
+                                           レビュー用 PR
+                                                ↓（確認してマージ）
+data/baseline.json / counts.json / overrides.json → ビルド時 JSON → GitHub Pages
 ```
 
-## 技術スタック
+閲覧時は GitHub Pages 上の `data/rokko.json` だけを取得し、外部APIを呼びません。
 
-| レイヤー | 技術 |
-|---|---|
-| データ収集 | Python 3.14 / uv / google-api-python-client |
-| データ管理 | Google スプレッドシート |
-| API | Google Apps Script（GAS） |
-| フロントエンド | Vite + React + TailwindCSS v4 |
-| コンテナ | Docker + docker-compose |
-| デプロイ | GitHub Pages + GitHub Actions |
+## data の役割
 
-## プロジェクト構成
+- `baseline.json`: スプレッドシートで確認済みの過去配信。0回配信も含み、再集計しません。
+- `counts.json`: baseline にない配信を日次自動集計した結果。PR で確認する対象です。
+- `overrides.json`: 人による補正。`overrides > baseline > counts` で最優先です。
 
-```
-utano-youtube-checker/
-├── check_youtube_utano.py   # データ収集スクリプト（YouTube API → CSV）
-├── output/
-│   └── rokko_count.csv      # 出力CSV（git管理外）
-├── gas/
-│   └── ReadRokkoCount.gs    # GAS コード（スプレッドシート → JSON API）
-├── web/                     # Webアプリ（Vite + React）
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── components/
-│   │   │   ├── RokkoCount.tsx       # 歌唱総数の表示
-│   │   │   ├── IntroSequence.tsx    # イントロ演出
-│   │   │   ├── VideoCard.tsx        # 動画カード（YouTube埋め込み）
-│   │   │   └── TimestampList.tsx    # タイムスタンプリンク
-│   │   ├── hooks/
-│   │   │   └── useRokkoData.ts      # GAS API データ取得
-│   │   └── types.ts
-│   └── ...
-├── .github/workflows/
-│   └── deploy.yml           # GitHub Pages 自動デプロイ
-├── docs/
-│   └── spec.md              # 機能仕様書
-├── Dockerfile
-└── docker-compose.yaml
-```
+override は `videos` に動画 ID をキーとして、`count`、`timestamps`、`reason`、`decided_on`（`YYYY-MM-DD`）を記入します。タイムスタンプは `h:mm:ss` です。
 
-## 開発環境セットアップ
+## 日次 PR の確認
 
-### 前提条件
+PR 本文の変更表で回数・タイムスタンプリンク・根拠行を確認し、「要確認」のセットリスト未発見や未集計言及を判断します。修正が必要なら `overrides.json` を追加・更新してからマージします。PR ブランチ上で加えた override のコミットは、翌日の更新でも保持されます。
 
-- Docker / Docker Compose
-- `.env` ファイルに `YOUTUBE_API_KEY` を設定済み
+## セットアップとローカル実行
 
-### 1. コンテナの起動
+GitHub の Settings → Secrets and variables → Actions で `YOUTUBE_API_KEY` を登録します。Settings → Actions → General の「Allow GitHub Actions to create and approve pull requests」も有効にします。Google Cloud Console では当該キーを **YouTube Data API v3 のみ** に API 制限してください（アプリケーション制限も環境に合わせて設定）。値をリポジトリやログへ保存しません。
 
 ```bash
-# 全コンテナをビルド＆起動
-docker compose up --build -d
+# 確認済みの過去 CSV を用意した後、一度だけ実行
+uv run python -m collector import-baseline --csv /path/to/confirmed.csv --source-name confirmed.csv
+
+# 日次更新・レビュー本文生成
+uv run python -m collector update --report /tmp/review.md
+
+# サイト用 JSON の生成
+uv run python -m collector build-site --out web/public/data/rokko.json
 ```
 
-2つのコンテナが起動する:
-
-| コンテナ | 用途 | イメージ |
-|---|---|---|
-| `utano_youtube_checker` | Python スクリプト実行用 | python:3.14-slim + uv |
-| `utano_web` | Webアプリ開発用 | node:22-slim |
-
-### 2. データ収集（Python）
+Docker 利用時も app サービスで同じコマンドを実行できます。
 
 ```bash
-docker compose exec app python check_youtube_utano.py
+docker compose exec app python -m collector update --report /tmp/review.md
 ```
 
-`output/rokko_count.csv` が生成される。
-
-### 3. Webアプリの開発サーバー起動
+Web 開発サーバーの前に公開 JSON を生成します。
 
 ```bash
-# 依存関係のインストール（初回のみ）
-docker compose exec web npm install
-
-# dev サーバー起動（GAS URLを環境変数で渡す）
-docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run dev
+uv run python -m collector build-site --out web/public/data/rokko.json
+cd web && npm run dev
 ```
 
-Webアプリの接続URL: http://localhost:5173/utano-youtube-checker/
-
-### 4. Webアプリのビルド
+## 確認コマンド
 
 ```bash
-docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run build
-```
-
-`web/dist/` にビルド成果物が出力される。
-
-### 5. lint・テスト
-
-依存関係をインストール済みの環境で、次を実行する。
-
-```bash
-# Python
 uv run ruff check .
 uv run ruff format --check .
 uv run pytest
-
-# Web
-cd web
-npm run lint
-npm run typecheck
-npm test
+cd web && npm run lint && npm run typecheck && npm test
 ```
-
-## データ更新フロー
-
-1. `docker compose exec app python check_youtube_utano.py` でCSV出力
-2. CSVの内容を Google スプレッドシートにコピー
-3. 人間の目で六甲おろしのカウントが正しいか確認・修正
-4. GAS のスクリプトエディタで `clearCache` 関数を実行（キャッシュクリア）
-5. Webページに最新データが反映される
-
-## 環境変数
-
-| 変数 | 用途 | 設定場所 |
-|---|---|---|
-| `YOUTUBE_API_KEY` | YouTube Data API v3 のAPIキー | `.env` |
-| `VITE_GAS_URL` | GAS WebアプリのURL | dev サーバー起動時 / GitHub Secrets |
