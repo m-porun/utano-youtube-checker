@@ -14,6 +14,8 @@ data/baseline.json / counts.json / overrides.json → ビルド時 JSON → GitH
 
 閲覧時は GitHub Pages 上の `data/rokko.json` だけを取得し、外部APIを呼びません。
 
+日次集計は毎日 6:00 JST に実行します。タイトル更新のため、サイトは毎週月曜 2:00 JST に再デプロイします。
+
 ## data の役割
 
 - `baseline.json`: スプレッドシートで確認済みの過去配信。0回配信も含み、再集計しません。

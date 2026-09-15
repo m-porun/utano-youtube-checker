@@ -4,6 +4,8 @@
 
 毎日 JST 06:00 に GitHub Actions がアップロード再生リストを全件取得し、`actualStartTime` を持つライブだけを判定する。確認済みの `baseline.json` は境界として扱い、そこにないライブだけの人気順トップレベルコメント20件を再集計する。変更があるときだけ `data/daily-update` ブランチの PR を作る。
 
+サイトはタイトル更新のため、毎週月曜 2:00 JST に再デプロイする。
+
 ```text
 YouTube API → collector update → counts.json → PR レビュー → main
                                                     ↓
