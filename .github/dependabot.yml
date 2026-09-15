@@ -10,6 +10,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint が TypeScript 7（ネイティブ版）に未対応のため。対応後に削除する
+      - dependency-name: typescript
+        versions: [">=7"]
   - package-ecosystem: uv
     directory: /
     schedule:
