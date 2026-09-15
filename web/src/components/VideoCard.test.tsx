@@ -4,7 +4,6 @@ import type { VideoData } from "../types";
 import VideoCard from "./VideoCard";
 
 const validVideo: VideoData = {
-  index: 1,
   title: "六甲おろし歌唱回",
   videoId: "abcD_efG-12",
   rokkoCount: 1,
@@ -21,8 +20,14 @@ describe("VideoCard", () => {
   it("uses a start timestamp in the YouTube embed URL", () => {
     render(<VideoCard video={validVideo} />);
 
-    expect(screen.getByTitle(validVideo.title).getAttribute("src")).toBe(
+    expect(screen.getByTitle("六甲おろし歌唱回").getAttribute("src")).toBe(
       "https://www.youtube.com/embed/abcD_efG-12?start=3723",
     );
+  });
+
+  it("shows a fallback for a missing title", () => {
+    render(<VideoCard video={{ ...validVideo, title: null }} />);
+
+    expect(screen.getAllByText("タイトルを取得できませんでした")).not.toHaveLength(0);
   });
 });

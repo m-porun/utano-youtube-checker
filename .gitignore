@@ -13,6 +13,7 @@ web/.vite/
 web/dist/
 web/dist-ssr/
 web/coverage/
+web/public/data/
 web/.env
 web/.env.local
 web/*.local

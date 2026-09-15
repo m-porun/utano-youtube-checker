@@ -20,7 +20,7 @@ export default function VideoCard({ video }: VideoCardProps) {
       <div className="p-4 sm:p-6">
         <div className="mb-3 flex items-start justify-between gap-3">
           <h2 className="text-base font-bold leading-snug text-gray-800 sm:text-lg">
-            {video.title}
+            {video.title ?? "タイトルを取得できませんでした"}
           </h2>
           <span className="shrink-0 rounded-full bg-amber-500 px-3 py-1 text-sm font-bold text-white">
             {video.rokkoCount}回
@@ -33,7 +33,7 @@ export default function VideoCard({ video }: VideoCardProps) {
       <div className="aspect-video w-full">
         <iframe
           src={`https://www.youtube.com/embed/${safeVideoId}${video.timestamps.length > 0 ? `?start=${toSeconds(video.timestamps[0])}` : ""}`}
-          title={video.title}
+          title={video.title ?? "タイトルを取得できませんでした"}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           loading="lazy"
