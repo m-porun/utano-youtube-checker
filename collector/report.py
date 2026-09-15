@@ -81,7 +81,7 @@ def build_report(
             checks.append(f"- `{video_id}`: セットリストが見つかりません")
         else:
             checks.extend(
-                f"- `{video_id}`: {sanitize_comment(line)}"
+                f"- `{video_id}`: タイムスタンプのない言及: {sanitize_comment(line)}"
                 for line in uncounted_mentions(setlists.get(video_id))
             )
     check_reserve = 0

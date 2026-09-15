@@ -28,12 +28,61 @@ def test_repository_data_is_valid(path: Path, kind: str) -> None:
 def test_setlist_rules_and_evidence() -> None:
     text = "セットリスト 六甲おろし見出し\n00:01:02 六甲おろし\n00:02:03 雑談 六甲おろし"
     assert extract_setlist(["TS\n00:01:02 A", text]) == text
-    assert count_rokko(text) == [(1, "0:01:02")]
-    assert evidence_lines(text) == ["0:01:02 六甲おろし"]
-    assert uncounted_mentions(text) == [
-        "セットリスト 六甲おろし見出し",
+    assert count_rokko(text) == [(1, "0:01:02"), (2, "0:02:03")]
+    assert evidence_lines(text) == [
+        "0:01:02 六甲おろし",
         "0:02:03 雑談 六甲おろし",
     ]
+    assert uncounted_mentions(text) == [
+        "セットリスト 六甲おろし見出し",
+    ]
+
+
+def test_count_rokko_counts_setlist_after_chat() -> None:
+    setlist = "雑談: 六甲おろし耐久\nセットリスト\n0:01:02 六甲おろし"
+    assert count_rokko(setlist) == [(1, "0:01:02")]
+
+
+def test_count_rokko_counts_mentions_after_end_words() -> None:
+    setlist = (
+        "セットリスト\n0:01:02 雑談: 六甲おろし\n0:02:03 配信内容: 六甲おろし\n"
+        "0:03:04 タイムライン: 六甲おろし\n0:04:05 六甲おろし"
+    )
+    assert count_rokko(setlist) == [
+        (1, "0:01:02"),
+        (2, "0:02:03"),
+        (3, "0:03:04"),
+        (4, "0:04:05"),
+    ]
+
+
+def test_count_rokko_counts_each_timestamp_in_endurance_stream() -> None:
+    setlist = "セットリスト\n" + "\n".join(f"0:0{index}:00 六甲おろし" for index in range(5))
+    assert len(count_rokko(setlist)) == 5
+
+
+def test_count_rokko_counts_duplicate_mentions_in_one_section_once() -> None:
+    setlist = "セットリスト\n0:01:02 六甲おろし 六甲おろし"
+    assert count_rokko(setlist) == [(1, "0:01:02")]
+
+
+def test_uncounted_mentions_returns_only_lines_before_first_timestamp() -> None:
+    setlist = "六甲おろし見出し\n0:01:02 六甲おろし\n0:02:03 雑談 六甲おろし"
+    assert uncounted_mentions(setlist) == ["六甲おろし見出し"]
+
+
+def test_evidence_lines_include_sections_after_chat() -> None:
+    setlist = "セットリスト\n0:01:02 雑談\n0:02:03 六甲おろし"
+    assert evidence_lines(setlist) == ["0:02:03 六甲おろし"]
+
+
+def test_count_rokko_matches_spec_example() -> None:
+    setlist = (
+        "セトリ\n00:12:43 阪神タイガースの歌 (六甲おろし)\n"
+        "00:16:26 阪神タイガースの歌 (六甲おろし) 六甲おろし耐久ラスト\n"
+        "01:05:10 雑談: 土曜は六甲おろし耐久"
+    )
+    assert count_rokko(setlist) == [(1, "0:12:43"), (2, "0:16:26"), (3, "1:05:10")]
 
 
 @pytest.mark.parametrize(
