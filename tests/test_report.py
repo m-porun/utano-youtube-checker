@@ -1,3 +1,5 @@
+import re
+
 from collector.report import build_report, sanitize_comment
 
 
@@ -70,3 +72,30 @@ def test_report_limits_body_length_with_many_checks() -> None:
 def test_report_reports_missing_confirmed_video() -> None:
     report = build_report({}, {}, {}, [], ["abcD_efG-12"])
     assert "非公開または削除" in report
+
+
+def test_report_omits_table_header_without_rows() -> None:
+    report = build_report({}, {}, {}, [])
+    assert "| 配信 |" not in report
+
+
+def test_report_keeps_removed_section_when_body_is_full() -> None:
+    changes = {f"video{index:06}": (None, _record(1, "0:01:02")) for index in range(1_000)}
+    report = build_report(changes, {}, {}, ["abcD_efG-12"])
+    assert len(report) <= 60_000
+    assert "## 削除・非公開" in report
+
+
+def test_report_sanitizes_pipe_and_newline() -> None:
+    report = build_report(
+        {"abcD_efG-12": (None, _record(1, "0:01:02"))},
+        {},
+        {"abcD_efG-12": "セトリ\n0:01:02 六甲おろし a|b\nc"},
+        [],
+    )
+    rows = [line for line in report.splitlines() if line.startswith("| [")]
+    assert len(rows) == 1
+    assert len(re.findall(r"(?<!\\)\|", rows[0])) == 4
+    assert "a\\|b" in rows[0]
+    assert "\nc\n" not in report
+    assert "\n| c" not in report

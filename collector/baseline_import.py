@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-from .store import VIDEO_ID, load_json, write_json
+from .store import VIDEO_ID, validate, write_json
 from .timestamps import normalize_timestamp
 
 
@@ -59,6 +59,7 @@ def import_confirmed(
     if errors:
         raise ValueError("回数とタイムスタンプ件数が不一致: " + ", ".join(errors))
     result = {"source": source_name or csv_path.name, "videos": videos}
+    validate(result)
     return result
 
 
@@ -69,12 +70,16 @@ def run_import(
     corrections: list[str],
     reason: str,
     decided_on: str,
+    force: bool,
 ) -> None:
     """CLI の補正指定を解析してインポート結果を書き出す。"""
-    parsed = {item.split("=", 1)[0]: int(item.split("=", 1)[1]) for item in corrections}
+    if out_path.exists() and not force:
+        raise ValueError(f"{out_path} は既に存在します。上書きには --force を使用してください")
+    parsed: dict[str, int] = {}
+    for item in corrections:
+        video_id, separator, count_text = item.partition("=")
+        if not separator or not VIDEO_ID.fullmatch(video_id) or not count_text.isdecimal():
+            raise ValueError("--correction は <videoId>=<count> 形式で指定してください")
+        parsed[video_id] = int(count_text)
     result = import_confirmed(csv_path, parsed, reason, decided_on, source_name)
-    temporary = out_path.with_suffix(".validation.json")
-    write_json(temporary, result)
-    load_json(temporary)
-    temporary.unlink()
     write_json(out_path, result)

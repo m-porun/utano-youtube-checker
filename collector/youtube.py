@@ -1,5 +1,6 @@
 """YouTube Data API の I/O 境界。"""
 
+import json
 from typing import Any
 
 from googleapiclient.errors import HttpError
@@ -11,6 +12,7 @@ def fetch_upload_ids(client: Any) -> list[str]:
     """アップロード再生リストを全ページ走査して動画 ID を返す。"""
     ids: list[str] = []
     token: str | None = None
+    seen_tokens: set[str] = set()
     while True:
         response = (
             client.playlistItems()
@@ -26,6 +28,9 @@ def fetch_upload_ids(client: Any) -> list[str]:
         token = response.get("nextPageToken")
         if not token:
             return ids
+        if token in seen_tokens:
+            raise RuntimeError("アップロード再生リストのページトークンが繰り返されました")
+        seen_tokens.add(token)
 
 
 def fetch_live_videos(client: Any, video_ids: list[str]) -> dict[str, dict[str, str]]:
@@ -82,10 +87,26 @@ def fetch_comments(client: Any, video_id: str) -> list[str] | None:
             .execute()
         )
     except HttpError as error:
-        if error.resp.status in (403, 404):
+        if error.resp.status == 404:
+            return None
+        if error.resp.status == 403 and _comment_error_reason(error) in {
+            "commentsDisabled",
+            "videoNotFound",
+        }:
             return None
         raise
     return [
         item["snippet"]["topLevelComment"]["snippet"]["textDisplay"]
         for item in response.get("items", [])
     ]
+
+
+def _comment_error_reason(error: HttpError) -> str | None:
+    """YouTube API のエラー本文から reason を安全に取り出す。"""
+    try:
+        content = json.loads(error.content.decode("utf-8"))
+        errors = content.get("error", {}).get("errors", [])
+        reason = errors[0].get("reason") if errors else None
+        return reason if isinstance(reason, str) else None
+    except AttributeError, UnicodeDecodeError, json.JSONDecodeError, IndexError:
+        return None

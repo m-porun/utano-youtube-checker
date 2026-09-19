@@ -19,6 +19,8 @@ from .site import build_site_data, write_site
 from .store import load_json, write_json
 from .youtube import fetch_comments, fetch_live_videos, fetch_upload_ids
 
+VIDEOS_PATH = Path("data/videos.json")
+
 
 def require_client() -> Any:
     """環境変数から API クライアントを作る。"""
@@ -30,8 +32,10 @@ def require_client() -> Any:
 
 
 def _within_three_days(started_at: str, now: datetime) -> bool:
+    if now.tzinfo is None:
+        raise ValueError("now はタイムゾーン付きで指定してください")
     started = datetime.fromisoformat(started_at.replace("Z", "+00:00"))
-    return now.astimezone(started.tzinfo) - started <= timedelta(days=3)
+    return now - started <= timedelta(days=3)
 
 
 def update(client: Any, videos_path: Path, report_path: Path, now: datetime | None = None) -> bool:
@@ -43,7 +47,14 @@ def update(client: Any, videos_path: Path, report_path: Path, now: datetime | No
     next_records = dict(old)
     titles: dict[str, str] = {}
     setlists: dict[str, str | None] = {}
+    unavailable_comments: set[str] = set()
     removed: list[str] = []
+    if old and not live:
+        raise RuntimeError("API がライブ配信を返しませんでした。更新を中止しました")
+    if old and len(live) < len(old) * 0.9:
+        raise RuntimeError(
+            f"API のライブ配信数が少なすぎます: {len(live)} 件 / 保存済み {len(old)} 件"
+        )
     for video_id, record in old.items():
         if video_id not in live and not record["confirmed"]:
             next_records.pop(video_id)
@@ -56,7 +67,9 @@ def update(client: Any, videos_path: Path, report_path: Path, now: datetime | No
             continue
         titles[video_id] = metadata["title"]
         comments = fetch_comments(client, video_id)
-        setlist = extract_setlist(comments or []) if comments is not None else None
+        if comments is None:
+            unavailable_comments.add(video_id)
+        setlist = extract_setlist(comments) if comments is not None else None
         setlists[video_id] = setlist
         matches = count_rokko(setlist)
         if previous and previous["count"] > 0 and setlist is None:
@@ -73,6 +86,11 @@ def update(client: Any, videos_path: Path, report_path: Path, now: datetime | No
     missing_confirmed = [
         video_id for video_id in sorted(set(old) - set(live)) if old[video_id]["confirmed"]
     ]
+    unresolved_setlists = [
+        video_id
+        for video_id, record in old.items()
+        if not record["confirmed"] and not record.get("setlist_found", True)
+    ]
     changes = {
         video_id: (old.get(video_id), next_records.get(video_id))
         for video_id in set(old) | set(next_records)
@@ -83,7 +101,16 @@ def update(client: Any, videos_path: Path, report_path: Path, now: datetime | No
         write_json(videos_path, {"source": data["source"], "videos": next_records})
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(
-        build_report(changes, titles, setlists, removed, missing_confirmed), encoding="utf-8"
+        build_report(
+            changes,
+            titles,
+            setlists,
+            removed,
+            missing_confirmed,
+            unresolved_setlists,
+            unavailable_comments,
+        ),
+        encoding="utf-8",
     )
     return changed
 
@@ -101,6 +128,7 @@ def parser() -> argparse.ArgumentParser:
     imported.add_argument("--correction", action="append", default=[])
     imported.add_argument("--reason", required=True)
     imported.add_argument("--decided-on", required=True)
+    imported.add_argument("--force", action="store_true")
     site = commands.add_parser("build-site")
     site.add_argument("--out", type=Path, required=True)
     return result
@@ -109,26 +137,27 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     """CLI を実行する。"""
     args = parser().parse_args(argv)
-    if args.command == "import-confirmed":
-        run_import(
-            args.csv,
-            args.out,
-            args.source_name,
-            args.correction,
-            args.reason,
-            args.decided_on,
-        )
-        return 0
     try:
+        if args.command == "import-confirmed":
+            run_import(
+                args.csv,
+                args.out,
+                args.source_name,
+                args.correction,
+                args.reason,
+                args.decided_on,
+                args.force,
+            )
+            return 0
         client = require_client()
         if args.command == "update":
-            changed = update(client, Path("data/videos.json"), args.report)
+            changed = update(client, VIDEOS_PATH, args.report)
             print(f"changed={str(changed).lower()}")
             return 0
-        data = load_json(Path("data/videos.json"))
+        data = load_json(VIDEOS_PATH)
         write_site(args.out, build_site_data(client, data))
         return 0
-    except RuntimeError as error:
+    except (OSError, RuntimeError, ValueError) as error:
         print(f"エラー: {error}", file=sys.stderr)
         return 2
     except HttpError as error:

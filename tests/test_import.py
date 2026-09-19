@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from collector.baseline_import import import_confirmed
+from collector.baseline_import import import_confirmed, run_import
 
 HEADER = "動画URL,六甲おろしが歌われた数,タイムスタンプ,動画タイトル,セットリスト\n"
 URL = "https://www.youtube.com/watch?v=abcD_efG-12"
@@ -43,3 +43,24 @@ def test_import_confirmed_omits_title_and_setlist_columns(tmp_path: Path) -> Non
 def test_import_confirmed_rejects_missing_columns(tmp_path: Path) -> None:
     with pytest.raises(ValueError):
         import_confirmed(_csv(tmp_path / "x.csv", "動画URL\n"), {}, "", "2026-09-19", None)
+
+
+def test_import_confirmed_rejects_existing_output_without_force(tmp_path: Path) -> None:
+    csv = _csv(tmp_path / "x.csv", HEADER + f"{URL},0,,,\n")
+    output = _csv(tmp_path / "out.json", "old")
+    with pytest.raises(ValueError):
+        run_import(csv, output, None, [], "", "2026-09-19", False)
+    assert output.read_text(encoding="utf-8") == "old"
+
+
+def test_import_confirmed_overwrites_with_force(tmp_path: Path) -> None:
+    csv = _csv(tmp_path / "x.csv", HEADER + f"{URL},0,,,\n")
+    output = _csv(tmp_path / "out.json", "old")
+    run_import(csv, output, None, [], "", "2026-09-19", True)
+    assert "confirmed" in output.read_text(encoding="utf-8")
+
+
+def test_import_confirmed_handles_row_with_missing_url(tmp_path: Path) -> None:
+    csv = _csv(tmp_path / "x.csv", HEADER + ",0,,,\n")
+    with pytest.raises(ValueError, match="不正な動画URL"):
+        import_confirmed(csv, {}, "", "2026-09-19", None)
