@@ -67,7 +67,9 @@ jobs:
           else
             # open PR が無いので、残存したリモートブランチは安全に置き換える。
             git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push --force origin auto/daily-update
-            gh pr create --base main --head auto/daily-update --title '[UPDATE] 六甲おろし集計データを更新' --body-file "$RUNNER_TEMP/review.md"
+            # UTC 実行環境でも PR 作成日を日本時間で付ける。
+            pr_title_date="$(TZ=Asia/Tokyo date +%Y%m%d)"
+            gh pr create --base main --head auto/daily-update --title "[UPDATE] 六甲おろし集計データを更新_${pr_title_date}" --body-file "$RUNNER_TEMP/review.md"
           fi
         env:
           GH_TOKEN: ${{ github.token }}
