@@ -64,4 +64,4 @@ cd web && npm test
 
 ## Architecture
 
-GitHub Actions が一日一回だけ YouTube API から baseline 外のライブ配信を集計し、変更時はレビュー用 PR を作成する。`overrides > baseline > counts` をビルド時にマージして公開 JSON を生成し、Webアプリ（`web/`）はその静的 JSON を表示する。
+GitHub Actions は未登録の配信と、未確定かつ配信開始から3日以内の配信を集計する。確認済みレコードは変更せず、`videos.json` から公開 JSON を生成してWebアプリが表示する。

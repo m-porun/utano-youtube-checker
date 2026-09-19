@@ -2,19 +2,19 @@
 
 ## 構成
 
-毎日 JST 06:00 に GitHub Actions がアップロード再生リストを全件取得し、`actualStartTime` を持つライブだけを判定する。確認済みの `baseline.json` は境界として扱い、そこにないライブだけの人気順トップレベルコメント20件を再集計する。変更があるときだけ `data/daily-update` ブランチの PR を作る。
+毎日 JST 06:00 に GitHub Actions がアップロード再生リストを全件取得し、`actualStartTime` を持つライブだけを判定する。未登録の配信と、未確定かつ配信開始から3日以内の配信を人気順トップレベルコメント20件から集計する。変更があるときだけ `data/daily-update` ブランチの PR を作る。
 
 サイトはタイトル更新のため、毎週月曜 2:00 JST に再デプロイする。
 
 ```text
-YouTube API → collector update → counts.json → PR レビュー → main
+YouTube API → collector update → videos.json → PR レビュー → main
                                                     ↓
-                         collector build-site ← baseline / overrides / counts
+                         collector build-site ← videos.json
                                                     ↓
                                                rokko.json → Web
 ```
 
-`overrides > baseline > counts` の順で回数を決める。タイトルなど YouTube API 由来のデータは、ビルド時の `rokko.json` にだけ含め、リポジトリには保存しない。
+`videos.json` の `confirmed: true` は人が確認済みの値で、日次集計は変更しない。タイトルなど YouTube API 由来のデータは、ビルド時の `rokko.json` にだけ含め、リポジトリには保存しない。
 
 ## 判定
 
@@ -27,10 +27,10 @@ YouTube API → collector update → counts.json → PR レビュー → main
 01:05:10 雑談: 土曜は六甲おろし耐久
 ```
 
-この例は3区間すべてに「六甲おろし」があるため3回となる。2行目には「六甲おろし」が2回書かれているが、同じタイムスタンプの1曲なので1回となる。雑談を含む区間も見逃さないために数え、日次PRで人が確認して必要なら overrides で補正する。
+この例は3区間すべてに「六甲おろし」があるため3回となる。2行目には「六甲おろし」が2回書かれているが、同じタイムスタンプの1曲なので1回となる。雑談を含む区間も数え、日次PRで人が確認して必要ならレコードを確定する。
 
 最初のタイムスタンプより前の見出しにある「六甲おろし」は数えない。たとえば `六甲おろし耐久セットリスト` の後に `00:12:43 ...` が続く場合、この見出しは要確認の「タイムスタンプのない言及」として表示する。
 
 ## 運用
 
-日次 PR の回数・証拠・要確認項目を人が確認する。補正は `overrides.json` に理由と決定日を残す。
+日次 PR の回数・証拠・要確認項目を人が確認する。値を判断したレコードは `confirmed: true` とし、必要に応じて理由と決定日を残す。

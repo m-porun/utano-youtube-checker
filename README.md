@@ -5,11 +5,11 @@
 ## データフロー
 
 ```text
-GitHub Actions（毎日 JST 06:00）→ YouTube Data API v3 → data/counts.json
+GitHub Actions（毎日 JST 06:00）→ YouTube Data API v3 → data/videos.json
                                                 ↓（変更時だけ）
                                            レビュー用 PR
                                                 ↓（確認してマージ）
-data/baseline.json / counts.json / overrides.json → ビルド時 JSON → GitHub Pages
+data/videos.json → ビルド時 JSON → GitHub Pages
 ```
 
 閲覧時は GitHub Pages 上の `data/rokko.json` だけを取得し、外部APIを呼びません。
@@ -18,15 +18,15 @@ data/baseline.json / counts.json / overrides.json → ビルド時 JSON → GitH
 
 ## data の役割
 
-- `baseline.json`: スプレッドシートで確認済みの過去配信。0回配信も含み、再集計しません。
-- `counts.json`: baseline にない配信を日次自動集計した結果。PR で確認する対象です。
-- `overrides.json`: 人による補正。`overrides > baseline > counts` で最優先です。
+- `videos.json`: 配信の集計値と確認状態を保存する唯一のデータファイルです。
+- `confirmed: true` は人が確認済みの値で、日次集計は変更しません。
+- 未登録の配信と、未確定かつ配信開始から3日以内の配信だけを日次集計します。
 
-override は `videos` に動画 ID をキーとして、`count`、`timestamps`、`reason`、`decided_on`（`YYYY-MM-DD`）を記入します。タイムスタンプは `h:mm:ss` です。
+確認して値を直す場合は、レコードを `confirmed: true` にし、`reason` と `decided_on`（`YYYY-MM-DD`）を対で記入します。タイムスタンプは `h:mm:ss` です。
 
 ## 日次 PR の確認
 
-PR 本文の変更表で回数・タイムスタンプリンク・根拠行を確認し、「要確認」のセットリスト未発見やタイムスタンプのない言及を判断します。修正が必要なら `overrides.json` を追加・更新してからマージします。PR ブランチ上で加えた override のコミットは、翌日の更新でも保持されます。判定の詳細は [仕様書](docs/spec.md) を参照してください。
+PR 本文の変更表で回数・タイムスタンプリンク・根拠行を確認します。修正が必要なら `videos.json` の値を直し、確定フラグと理由・決定日を記入します。判定の詳細は [仕様書](docs/spec.md) を参照してください。
 
 ## セットアップとローカル実行
 
@@ -34,7 +34,7 @@ GitHub の Settings → Secrets and variables → Actions で `YOUTUBE_API_KEY` 
 
 ```bash
 # 確認済みの過去 CSV を用意した後、一度だけ実行
-uv run python -m collector import-baseline --csv /path/to/confirmed.csv --source-name confirmed.csv
+uv run python -m collector import-confirmed --csv /path/to/confirmed.csv --reason "確認済み" --decided-on YYYY-MM-DD
 
 # 日次更新・レビュー本文生成
 uv run python -m collector update --report /tmp/review.md
