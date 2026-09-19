@@ -25,15 +25,14 @@ def test_report_disables_autolinks() -> None:
     assert "www.evil.example" not in text
 
 
-def test_report_marks_override() -> None:
+def test_report_marks_confirmed_record() -> None:
     report = build_report(
         {"abcD_efG-12": (None, _record(1, "0:01:02"))},
         {},
         {"abcD_efG-12": "TS\n0:01:02 六甲おろし"},
         [],
-        {"abcD_efG-12"},
     )
-    assert "override あり" in report
+    assert "確定済み" not in report
 
 
 def test_report_uses_each_videos_own_before_value() -> None:
@@ -66,3 +65,8 @@ def test_report_limits_body_length_with_many_checks() -> None:
     assert len(report) <= 60_000
     assert "## 要確認" in report
     assert "ほか" in report
+
+
+def test_report_reports_missing_confirmed_video() -> None:
+    report = build_report({}, {}, {}, [], ["abcD_efG-12"])
+    assert "非公開または削除" in report

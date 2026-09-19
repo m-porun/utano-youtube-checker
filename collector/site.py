@@ -5,29 +5,22 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from .store import merged_videos, write_json
+from .store import write_json
 from .youtube import fetch_video_titles
 
 
-def build_site_data(
-    client: Any,
-    baseline: dict[str, Any],
-    counts: dict[str, Any],
-    overrides: dict[str, Any],
-    today: str | None = None,
-) -> dict[str, Any]:
-    """保存済み集計と短命なタイトルを公開スキーマへ変換する。"""
-    records = merged_videos(baseline, counts, overrides)
-    positive = {video_id: record for video_id, record in records.items() if record["count"] > 0}
-    titles = fetch_video_titles(client, list(positive))
+def build_site_data(client: Any, data: dict[str, Any], today: str | None = None) -> dict[str, Any]:
+    """videos.json の回数と API タイトルから公開データを作る。"""
+    records = {key: value for key, value in data["videos"].items() if value["count"] > 0}
+    titles = fetch_video_titles(client, list(records))
     videos = [
         {
-            "videoId": video_id,
-            "title": titles.get(video_id),
-            "rokkoCount": record["count"],
-            "timestamps": record["timestamps"],
+            "videoId": key,
+            "title": titles.get(key),
+            "rokkoCount": value["count"],
+            "timestamps": value["timestamps"],
         }
-        for video_id, record in positive.items()
+        for key, value in records.items()
     ]
     videos.sort(
         key=lambda value: (

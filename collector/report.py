@@ -33,20 +33,20 @@ def _append_items(
     if not items:
         return
     prefix = ["", heading, ""] if heading else []
-    marker = f"ほか {len(items)} 件（data/counts.json の差分を確認）"
+    marker = f"ほか {len(items)} 件（data/videos.json の差分を確認）"
     if len("\n".join(lines + prefix + [marker])) + 1 > limit:
         return
     lines.extend(prefix)
     added = 0
     for item in items:
         remaining = len(items) - added - 1
-        reserve = [f"ほか {remaining} 件（data/counts.json の差分を確認）"] if remaining else []
+        reserve = [f"ほか {remaining} 件（data/videos.json の差分を確認）"] if remaining else []
         if len("\n".join(lines + [item] + reserve)) + 1 > limit:
             break
         lines.append(item)
         added += 1
     if added < len(items):
-        lines.append(f"ほか {len(items) - added} 件（data/counts.json の差分を確認）")
+        lines.append(f"ほか {len(items) - added} 件（data/videos.json の差分を確認）")
 
 
 def build_report(
@@ -54,10 +54,9 @@ def build_report(
     titles: dict[str, str],
     setlists: dict[str, str | None],
     removed: list[str],
-    overrides: set[str] | None = None,
+    missing_confirmed: list[str] | None = None,
 ) -> str:
     """変更・要確認事項だけを含む、上限内の PR 本文を返す。"""
-    override_ids = overrides or set()
     lines = ["## 日次集計レポート", "", "| 配信 | 回数 | 根拠 |", "| --- | --- | --- |"]
     rows: list[str] = []
     checks: list[str] = []
@@ -69,7 +68,7 @@ def build_report(
             "<br>".join(sanitize_comment(line) for line in evidence_lines(setlists.get(video_id)))
             or "-"
         )
-        note = " override あり（公開値は override）" if video_id in override_ids else ""
+        note = " 確定済み" if after.get("confirmed") else ""
         rows.append(
             f"| [{title}](https://www.youtube.com/watch?v={video_id}) | "
             f"{(before or {}).get('count', 0)} → {after['count']}{note} | "
@@ -84,13 +83,19 @@ def build_report(
                 f"- `{video_id}`: タイムスタンプのない言及: {sanitize_comment(line)}"
                 for line in uncounted_mentions(setlists.get(video_id))
             )
+    checks.extend(
+        f"- `{video_id}`: 非公開または削除されました（確定済み記録を保持）"
+        for video_id in missing_confirmed or []
+    )
     check_reserve = 0
     if checks:
         check_reserve = len("\n## 要確認\n\n") + len(
-            f"ほか {len(checks)} 件（data/counts.json の差分を確認）\n"
+            f"ほか {len(checks)} 件（data/videos.json の差分を確認）\n"
         )
     _append_items(lines, None, rows, _LIMIT - check_reserve)
     _append_items(lines, "## 要確認", checks)
-    removed_items = [f"- `{video_id}` を counts から除外しました" for video_id in sorted(removed)]
+    removed_items = [
+        f"- `{video_id}` を data/videos.json から除外しました" for video_id in sorted(removed)
+    ]
     _append_items(lines, "## 削除・非公開", removed_items)
     return "\n".join(lines) + "\n"
