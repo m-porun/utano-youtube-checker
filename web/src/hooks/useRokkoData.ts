@@ -1,8 +1,6 @@
-// GAS APIデータ取得用カスタムフック
+// ビルド時に生成した静的 JSON を取得するカスタムフック
 import { useEffect, useState } from "react";
-import type { ApiResponse } from "../types";
-
-const GAS_URL = import.meta.env.VITE_GAS_URL as string;
+import { isApiResponse, type ApiResponse } from "../types";
 
 export function useRokkoData() {
   const [data, setData] = useState<ApiResponse | null>(null);
@@ -10,12 +8,15 @@ export function useRokkoData() {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    fetch(GAS_URL)
+    fetch(`${import.meta.env.BASE_URL}data/rokko.json`, { cache: "no-cache" })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
-      .then((json: ApiResponse) => setData(json))
+      .then((json: unknown) => {
+        if (!isApiResponse(json)) throw new Error("データ形式が不正です");
+        setData(json);
+      })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err : new Error(String(err))),
       )

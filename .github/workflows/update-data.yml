@@ -1,0 +1,73 @@
+name: Update daily data
+
+on:
+  schedule:
+    # 毎日 6:00 JST（cron は UTC）。
+    - cron: "0 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: update-data
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 書き込みトークンを .git/config に残さない。
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      # GITHUB_TOKEN 作成 PR は CI を起動しないため、この job で必ず検証する。
+      - run: uv sync --locked --group dev
+      - run: uv run ruff check .
+      - run: uv run pytest
+      - id: prepare
+        name: Prepare branch
+        shell: bash -eo pipefail {0}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          pr_number="$(gh pr list --head data/daily-update --base main --state open --json number --jq '.[0].number')"
+          if [ -n "$pr_number" ]; then
+            git fetch origin data/daily-update main
+            git checkout -B data/daily-update origin/data/daily-update
+            git merge --no-edit origin/main
+            echo 'existing_pr=true' >> "$GITHUB_OUTPUT"
+            echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+          else
+            git checkout -B data/daily-update origin/main
+            echo 'existing_pr=false' >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - id: collect
+        shell: bash -eo pipefail {0}
+        run: |
+          uv run python -m collector update --report "$RUNNER_TEMP/review.md" | tee "$RUNNER_TEMP/update.log"
+          changed_line="$(grep '^changed=' "$RUNNER_TEMP/update.log")"
+          test -n "$changed_line"
+          printf '%s\n' "$changed_line" >> "$GITHUB_OUTPUT"
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+      - name: Commit update branch and create or update PR
+        if: steps.collect.outputs.changed == 'true'
+        run: |
+          git add data/videos.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m '[UPDATE] 六甲おろし集計データを更新'
+          if [ '${{ steps.prepare.outputs.existing_pr }}' = 'true' ]; then
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin data/daily-update
+            gh pr edit '${{ steps.prepare.outputs.pr_number }}' --body-file "$RUNNER_TEMP/review.md"
+          else
+            # open PR が無いので、残存したリモートブランチは安全に置き換える。
+            git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push --force origin data/daily-update
+            gh pr create --base main --head data/daily-update --title '[UPDATE] 六甲おろし集計データを更新' --body-file "$RUNNER_TEMP/review.md"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}

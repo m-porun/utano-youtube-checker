@@ -8,7 +8,8 @@ import VideoCard from "./components/VideoCard";
 function sortVideos(videos: VideoData[]): VideoData[] {
   return [...videos].sort((a, b) => {
     if (b.rokkoCount !== a.rokkoCount) return b.rokkoCount - a.rokkoCount;
-    return a.index - b.index;
+    if ((a.title === null) !== (b.title === null)) return a.title === null ? 1 : -1;
+    return (a.title ?? "").localeCompare(b.title ?? "") || a.videoId.localeCompare(b.videoId);
   });
 }
 

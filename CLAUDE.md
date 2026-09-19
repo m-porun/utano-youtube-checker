@@ -18,7 +18,6 @@
 - **python-dotenv** for environment variable management
 - **Docker** + **docker-compose** for containerized execution
 - **Vite + React + TailwindCSS v4** for the web frontend
-- **Google Apps Script (GAS)** for spreadsheet-to-JSON API
 
 ## Commands
 
@@ -26,14 +25,15 @@
 # コンテナ起動
 docker compose up --build -d
 
-# データ収集（CSV出力）
-docker compose exec app python check_youtube_utano.py
+# 日次集計（レビュー本文を生成）
+docker compose exec app python -m collector update --report /tmp/review.md
 
 # Webアプリ dev サーバー起動
-docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run dev
+docker compose exec web npm run dev
 
 # Webアプリ ビルド
-docker compose exec -e VITE_GAS_URL=<GAS_URL> web npm run build
+docker compose exec app python -m collector build-site --out web/public/data/rokko.json
+docker compose exec web npm run build
 
 # Python lint・format・テスト
 uv run ruff check .
@@ -53,12 +53,15 @@ cd web && npm test
 - 外部公開、情報漏えいの可能性がある変更は、必ず事前にユーザーへ確認する。
 - コミットメッセージはペルソナ口調にせず、端的な日本語で記述する。
 - 詳細な開発ルールは [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) を参照する。
+- AI エージェントは GitHub の PR・Issue をマージまたはクローズせず、その提案もしない。判断と操作はユーザーが行う。
+- コメントとドキュメントは初めて読む人向けに、現在の仕様と必要な選択理由だけを書く。変更の経緯はコミットメッセージとPR本文に記録する。
+- 実行時刻・曜日・頻度・保存期間・上限値など具体的な値は、推奨値と理由を添えてユーザーに確認し、AI エージェントが独断で決めない。
+- タイムゾーンが関わる値は、日本時間と設定値を併記する。GitHub Actions の cron は UTC で指定する。
 
 ## Environment
 
 - `YOUTUBE_API_KEY`: YouTube Data API v3 のAPIキー。`.env`ファイルに設定（Git管理外）
-- `VITE_GAS_URL`: GAS WebアプリのURL。devサーバー起動時に環境変数で渡す
 
 ## Architecture
 
-Python スクリプト（`check_youtube_utano.py`）でチャンネルのアップロード再生リストからライブ配信を抽出し、人気順上位20件のトップレベルコメントにあるセットリストから「六甲おろし」を検出してCSVに出力する。CSVはGoogle スプレッドシートで人間がチェックし、GAS経由でJSON APIとして公開。Webアプリ（`web/`）がGASからデータを取得して表示する。
+GitHub Actions は未登録の配信と、未確定かつ配信開始から3日以内の配信を集計する。確認済みレコードは変更せず、`videos.json` から公開 JSON を生成してWebアプリが表示する。
