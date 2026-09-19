@@ -60,6 +60,24 @@ def test_normalize_timestamp_accepts_zero_padded_and_plain() -> None:
     assert normalize_timestamp("0:12:43") == "0:12:43"
 
 
+def test_normalize_timestamp_accepts_minute_second() -> None:
+    assert normalize_timestamp("12:43") == "0:12:43"
+
+
+def test_count_rokko_counts_minute_second_sections() -> None:
+    assert count_rokko("TS\n12:43 六甲おろし\n13:00 六甲おろし") == [(1, "0:12:43"), (2, "0:13:00")]
+
+
+def test_extract_setlist_ignores_ts_inside_words() -> None:
+    assert extract_setlist(["it's starts\n0:01:02 曲"]) is None
+
+
+def test_extract_setlist_is_deterministic_for_tied_candidates() -> None:
+    first = "TS\n0:01:02 A"
+    second = "TS\n0:01:02 B"
+    assert extract_setlist([first, second]) == extract_setlist([second, first])
+
+
 def test_normalize_timestamp_rejects_out_of_range() -> None:
     with pytest.raises(ValueError):
         normalize_timestamp("0:99:00")

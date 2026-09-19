@@ -2,7 +2,7 @@
 
 import re
 
-_TIMESTAMP = re.compile(r"^(\d{1,2}):(\d{2}):(\d{2})$")
+_TIMESTAMP = re.compile(r"^(?:(\d{1,2}):)?(\d{1,2}):(\d{2})$")
 
 
 def normalize_timestamp(value: str) -> str:
@@ -10,7 +10,9 @@ def normalize_timestamp(value: str) -> str:
     match = _TIMESTAMP.fullmatch(value.strip())
     if not match:
         raise ValueError(f"不正なタイムスタンプ形式: {value!r}")
-    hour, minute, second = (int(part) for part in match.groups())
+    hour_text, minute_text, second_text = match.groups()
+    hour = int(hour_text or 0)
+    minute, second = int(minute_text), int(second_text)
     if minute > 59 or second > 59:
         raise ValueError(f"不正なタイムスタンプ値: {value!r}")
     return f"{hour}:{minute:02}:{second:02}"

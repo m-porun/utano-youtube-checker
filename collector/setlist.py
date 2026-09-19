@@ -4,8 +4,12 @@ import re
 
 from .timestamps import normalize_timestamp
 
-SETLIST_KEYWORDS = re.compile(r"セトリ|セットリスト|set\s*list|setlist|タイムスタンプ|TS", re.I)
-TIMESTAMP_PATTERN = re.compile(r"\d{1,2}:\d{2}:\d{2}")
+SETLIST_KEYWORDS = re.compile(
+    r"セトリ|セットリスト|set\s*list|setlist|タイムスタンプ|"
+    r"(?<![A-Za-z])TS(?![A-Za-z])",
+    re.I,
+)
+TIMESTAMP_PATTERN = re.compile(r"(?:\d{1,2}:)?\d{1,2}:\d{2}")
 
 
 def _valid_timestamps(text: str) -> list[tuple[re.Match[str], str]]:
@@ -21,12 +25,14 @@ def _valid_timestamps(text: str) -> list[tuple[re.Match[str], str]]:
 
 def extract_setlist(comments: list[str]) -> str | None:
     """キーワードと有効なタイムスタンプを持つ最有力コメントを返す。"""
-    candidates = [
-        (comment, len(_valid_timestamps(comment)))
-        for comment in comments
-        if SETLIST_KEYWORDS.search(comment) and _valid_timestamps(comment)
-    ]
-    return max(candidates, key=lambda item: item[1])[0] if candidates else None
+    candidates: list[tuple[str, int]] = []
+    for comment in comments:
+        timestamps = _valid_timestamps(comment)
+        if SETLIST_KEYWORDS.search(comment) and timestamps:
+            candidates.append((comment, len(timestamps)))
+    if not candidates:
+        return None
+    return max(candidates, key=lambda item: (item[1], len(item[0]), item[0]))[0]
 
 
 def _sections(setlist: str) -> list[tuple[str, str]]:

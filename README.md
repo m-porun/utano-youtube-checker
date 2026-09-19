@@ -22,7 +22,7 @@ data/videos.json → ビルド時 JSON → GitHub Pages
 - `confirmed: true` は人が確認済みの値で、日次集計は変更しません。
 - 未登録の配信と、未確定かつ配信開始から3日以内の配信だけを日次集計します。
 
-確認して値を直す場合は、レコードを `confirmed: true` にし、`reason` と `decided_on`（`YYYY-MM-DD`）を対で記入します。タイムスタンプは `h:mm:ss` です。
+確認して値を直す場合は、レコードを `confirmed: true` にし、`reason` と `decided_on`（`YYYY-MM-DD`）を対で記入します。保存されるタイムスタンプは `h:mm:ss` です。セットリストのコメントは `mm:ss` 表記も読み取り、たとえば `12:43` は `0:12:43` に正規化します。
 
 ## 日次 PR の確認
 
