@@ -1,1 +1,33 @@
 @import "tailwindcss";
+
+body {
+  font-family: "Potta One", sans-serif;
+}
+
+.page-background {
+  background: repeating-linear-gradient(to right, transparent 0 72px, #3C393E 72px 80px);
+}
+
+.glass-card {
+  background-color: rgba(242, 231, 221, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 20px;
+  border: 2px solid rgba(206, 45, 84, 0.7);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.55);
+}
+
+@keyframes heart-wobble {
+  0%, 100% { transform: translateX(-1px); }
+  50% { transform: translateX(1px); }
+}
+
+.heart-wobble {
+  animation: heart-wobble var(--wobble-duration) ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heart-wobble {
+    animation: none;
+  }
+}

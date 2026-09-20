@@ -78,7 +78,7 @@ export default function IntroSequence({
   return (
     <div className="flex min-h-screen items-center justify-center bg-amber-50 px-4">
       <p
-        className={`text-center text-2xl font-bold text-gray-700 transition-opacity duration-2000 ${
+        className={`text-center text-2xl text-gray-700 transition-opacity duration-2000 ${
           visible ? "opacity-100" : "opacity-0"
         }`}
       >

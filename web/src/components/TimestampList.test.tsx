@@ -1,5 +1,6 @@
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { toSeconds } from "./TimestampList";
+import TimestampList, { toSeconds } from "./TimestampList";
 
 describe("toSeconds", () => {
   it("converts h:mm:ss to seconds", () => {
@@ -12,5 +13,19 @@ describe("toSeconds", () => {
 
   it.each(["abc", "1:2:3:4", "aa:bb"])("returns 0 for invalid timestamp %s", (timestamp) => {
     expect(toSeconds(timestamp)).toBe(0);
+  });
+});
+
+describe("TimestampList", () => {
+  it("shows a heading when timestamps are available", () => {
+    render(<TimestampList videoId="abcD_efG-12" timestamps={["01:02:03"]} />);
+
+    expect(screen.getByText("六甲おろしタイム")).toBeTruthy();
+  });
+
+  it("does not show a heading when timestamps are unavailable", () => {
+    const { container } = render(<TimestampList videoId="abcD_efG-12" timestamps={[]} />);
+
+    expect(container.querySelector("h3")).toBeNull();
   });
 });
