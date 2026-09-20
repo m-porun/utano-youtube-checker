@@ -30,4 +30,15 @@ describe("VideoCard", () => {
 
     expect(screen.getAllByText("タイトルを取得できませんでした")).not.toHaveLength(0);
   });
+
+  it("orders the title, embedded video, and timestamps in the card", () => {
+    const { container } = render(<VideoCard video={validVideo} />);
+
+    const title = container.querySelector("h2")!;
+    const iframe = container.querySelector("iframe")!;
+    const timestamp = container.querySelector("a")!;
+
+    expect(title.compareDocumentPosition(iframe)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(iframe.compareDocumentPosition(timestamp)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
 });
