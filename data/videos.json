@@ -14,7 +14,7 @@
     "-Jd3SJMjGNI": {
       "confirmed": false,
       "count": 0,
-      "setlist_found": false,
+      "setlist_found": true,
       "timestamps": []
     },
     "-RcyBcLrEHs": {
@@ -1920,6 +1920,12 @@
       "count": 0,
       "timestamps": []
     },
+    "Q6wJP3OdFes": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": false,
+      "timestamps": []
+    },
     "Q8f22uH9g0c": {
       "confirmed": true,
       "count": 0,
@@ -1957,6 +1963,12 @@
       "timestamps": []
     },
     "QjAUsfJpw8s": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": true,
+      "timestamps": []
+    },
+    "QkKyIE4KCHA": {
       "confirmed": false,
       "count": 0,
       "setlist_found": true,
