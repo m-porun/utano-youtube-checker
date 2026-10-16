@@ -1660,6 +1660,12 @@
       "count": 0,
       "timestamps": []
     },
+    "MsEsGzvSziY": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": false,
+      "timestamps": []
+    },
     "MuEr7HeO9NQ": {
       "confirmed": true,
       "count": 0,
@@ -3271,6 +3277,12 @@
     "hLfaPaV_zek": {
       "confirmed": true,
       "count": 0,
+      "timestamps": []
+    },
+    "hQKo3oXJktg": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": true,
       "timestamps": []
     },
     "hWWQ9GNomiE": {
