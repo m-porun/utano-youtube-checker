@@ -545,6 +545,12 @@
       "count": 0,
       "timestamps": []
     },
+    "75H7fpoWwbE": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": true,
+      "timestamps": []
+    },
     "76ZSkkB1euQ": {
       "confirmed": true,
       "count": 0,
@@ -1942,6 +1948,12 @@
     "Q4gRNBJRADA": {
       "confirmed": true,
       "count": 0,
+      "timestamps": []
+    },
+    "Q65V9wyrZUg": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": false,
       "timestamps": []
     },
     "Q6wJP3OdFes": {
