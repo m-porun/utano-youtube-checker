@@ -2068,7 +2068,7 @@
     "R8S09U_0jpE": {
       "confirmed": false,
       "count": 0,
-      "setlist_found": false,
+      "setlist_found": true,
       "timestamps": []
     },
     "RAX9qi33PVc": {
@@ -2812,6 +2812,14 @@
       "confirmed": true,
       "count": 0,
       "timestamps": []
+    },
+    "ac8_ixfgZPo": {
+      "confirmed": false,
+      "count": 1,
+      "setlist_found": true,
+      "timestamps": [
+        "1:54:46"
+      ]
     },
     "admpzV3Gs1g": {
       "confirmed": false,
