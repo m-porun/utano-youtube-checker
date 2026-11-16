@@ -45,7 +45,7 @@ def test_report_marks_rokko_mentions_for_human_review() -> None:
         [],
     )
     assert "候補回数" in report
-    assert "歌唱か雑談か要目視確認" in report
+    assert "候補回数が1以上の行は、歌唱か雑談かを目視確認" in report
 
 
 def test_report_uses_each_videos_own_before_value() -> None:

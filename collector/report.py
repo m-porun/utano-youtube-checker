@@ -77,8 +77,6 @@ def build_report(
             f"{(before or {}).get('count', 0)} → {after['count']} | "
             f"{evidence}<br>{_links(video_id, after['timestamps'])} |"
         )
-        if after["count"] > 0:
-            checks.append(f"- `{video_id}`: 六甲おろしの記載あり（歌唱か雑談か要目視確認）")
         if before and before["count"] > 0 and not after["setlist_found"]:
             checks.append(f"- `{video_id}`: 時刻コメントを再取得できませんでした（前回値を維持）")
         elif video_id in (unavailable_comments or set()):
@@ -107,6 +105,8 @@ def build_report(
         if items
     )
     if rows:
+        if any(after["count"] > 0 for before, after in changes.values() if after is not None):
+            lines.extend(["", "候補回数が1以上の行は、歌唱か雑談かを目視確認してください。"])
         lines.extend(["", "| 配信 | 候補回数 | 根拠 |", "| --- | --- | --- |"])
     _append_items(lines, None, rows, _LIMIT - reserved)
     _append_items(lines, "## 要確認", checks)
