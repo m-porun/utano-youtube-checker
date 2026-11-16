@@ -88,7 +88,7 @@ def update(client: Any, videos_path: Path, report_path: Path, now: datetime | No
     ]
     unresolved_setlists = [
         video_id
-        for video_id, record in old.items()
+        for video_id, record in next_records.items()
         if not record["confirmed"] and not record.get("setlist_found", True)
     ]
     changes = {
