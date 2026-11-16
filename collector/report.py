@@ -78,11 +78,11 @@ def build_report(
             f"{evidence}<br>{_links(video_id, after['timestamps'])} |"
         )
         if before and before["count"] > 0 and not after["setlist_found"]:
-            checks.append(f"- `{video_id}`: セットリストを再取得できませんでした（前回値を維持）")
+            checks.append(f"- `{video_id}`: 時刻コメントを再取得できませんでした（前回値を維持）")
         elif video_id in (unavailable_comments or set()):
             checks.append(f"- `{video_id}`: コメントを取得できませんでした")
         elif not after["setlist_found"]:
-            checks.append(f"- `{video_id}`: セットリストが見つかりません")
+            checks.append(f"- `{video_id}`: 有効な時刻が5個以上あるコメントが見つかりません")
         else:
             checks.extend(
                 f"- `{video_id}`: タイムスタンプのない言及: {sanitize_comment(line)}"
@@ -93,7 +93,7 @@ def build_report(
         for video_id in missing_confirmed or []
     )
     checks.extend(
-        f"- `{video_id}`: セットリストが見つかっていません"
+        f"- `{video_id}`: 有効な時刻が5個以上あるコメントが見つかっていません"
         for video_id in unresolved_setlists or []
     )
     removed_items = [
@@ -105,7 +105,9 @@ def build_report(
         if items
     )
     if rows:
-        lines.extend(["", "| 配信 | 回数 | 根拠 |", "| --- | --- | --- |"])
+        if any(after["count"] > 0 for before, after in changes.values() if after is not None):
+            lines.extend(["", "候補回数が1以上の行は、歌唱か雑談かを目視確認してください。"])
+        lines.extend(["", "| 配信 | 候補回数 | 根拠 |", "| --- | --- | --- |"])
     _append_items(lines, None, rows, _LIMIT - reserved)
     _append_items(lines, "## 要確認", checks)
     _append_items(lines, "## 削除・非公開", removed_items)
