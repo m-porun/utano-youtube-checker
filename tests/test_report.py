@@ -37,6 +37,17 @@ def test_report_marks_confirmed_record() -> None:
     assert "確定済み" not in report
 
 
+def test_report_marks_rokko_mentions_for_human_review() -> None:
+    report = build_report(
+        {"abcD_efG-12": (None, _record(1, "0:01:02"))},
+        {},
+        {"abcD_efG-12": "0:01:02 六甲おろし"},
+        [],
+    )
+    assert "候補回数" in report
+    assert "歌唱か雑談か要目視確認" in report
+
+
 def test_report_uses_each_videos_own_before_value() -> None:
     report = build_report(
         {

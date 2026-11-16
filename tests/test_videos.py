@@ -55,6 +55,22 @@ def test_update_recounts_unconfirmed_within_three_days(
     comments.assert_called_once()
 
 
+def test_update_removes_resolved_setlist_from_unresolved_report(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    record = {"count": 0, "timestamps": [], "confirmed": False, "setlist_found": False}
+    path, report, _ = _update_setup(monkeypatch, tmp_path, record)
+    monkeypatch.setattr(
+        cli,
+        "fetch_comments",
+        lambda client, video_id: ["\n".join(f"{minute}:00 曲{minute}" for minute in range(5))],
+    )
+    assert cli.update(MagicMock(), path, report, NOW)
+    assert "有効な時刻が5個以上あるコメントが見つかっていません" not in report.read_text(
+        encoding="utf-8"
+    )
+
+
 def test_update_skips_unconfirmed_after_three_days(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -196,7 +212,9 @@ def test_update_reports_unresolved_setlist_every_run(
     monkeypatch.setattr(cli, "fetch_comments", comments)
     assert not cli.update(MagicMock(), path, report, NOW)
     comments.assert_not_called()
-    assert "セットリストが見つかっていません" in report.read_text(encoding="utf-8")
+    assert "有効な時刻が5個以上あるコメントが見つかっていません" in report.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_update_distinguishes_unavailable_comments_from_missing_setlist(
@@ -220,7 +238,7 @@ def test_update_distinguishes_unavailable_comments_from_missing_setlist(
     assert cli.update(MagicMock(), path, report, NOW)
     text = report.read_text(encoding="utf-8")
     assert f"`{VIDEO}`: コメントを取得できませんでした" in text
-    assert f"`{second}`: セットリストが見つかりません" in text
+    assert f"`{second}`: 有効な時刻が5個以上あるコメントが見つかりません" in text
 
 
 @pytest.mark.parametrize(

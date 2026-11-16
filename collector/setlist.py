@@ -4,12 +4,8 @@ import re
 
 from .timestamps import normalize_timestamp
 
-SETLIST_KEYWORDS = re.compile(
-    r"セトリ|セットリスト|set\s*list|setlist|タイムスタンプ|"
-    r"(?<![A-Za-z])TS(?![A-Za-z])",
-    re.I,
-)
 TIMESTAMP_PATTERN = re.compile(r"(?:\d{1,2}:)?\d{1,2}:\d{2}")
+MIN_TIMESTAMP_CANDIDATE_COUNT = 5
 
 
 def _valid_timestamps(text: str) -> list[tuple[re.Match[str], str]]:
@@ -24,11 +20,11 @@ def _valid_timestamps(text: str) -> list[tuple[re.Match[str], str]]:
 
 
 def extract_setlist(comments: list[str]) -> str | None:
-    """キーワードと有効なタイムスタンプを持つ最有力コメントを返す。"""
+    """有効なタイムスタンプが5個以上あるコメントのうち最有力を返す。"""
     candidates: list[tuple[str, int]] = []
     for comment in comments:
         timestamps = _valid_timestamps(comment)
-        if SETLIST_KEYWORDS.search(comment) and timestamps:
+        if len(timestamps) >= MIN_TIMESTAMP_CANDIDATE_COUNT:
             candidates.append((comment, len(timestamps)))
     if not candidates:
         return None
