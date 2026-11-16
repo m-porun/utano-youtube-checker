@@ -10,13 +10,19 @@ from collector.timestamps import normalize_timestamp, timestamp_seconds
 
 
 def test_extract_setlist_picks_comment_with_most_timestamps() -> None:
-    short = "TS\n0:01:02 曲A"
-    long = "セットリスト\n0:01:02 曲A\n0:02:03 曲B"
+    short = "\n".join(f"{minute}:00 曲{minute}" for minute in range(5))
+    long = "\n".join(f"{minute}:00 曲{minute}" for minute in range(6))
     assert extract_setlist([short, long]) == long
 
 
-def test_extract_setlist_returns_none_without_keyword_or_timestamp() -> None:
-    assert extract_setlist(["0:01:02 曲A", "セットリストです"]) is None
+def test_extract_setlist_returns_none_with_fewer_than_five_timestamps() -> None:
+    comment = "セットリスト\n" + "\n".join(f"{minute}:00 曲{minute}" for minute in range(4))
+    assert extract_setlist([comment, "セットリストです"]) is None
+
+
+def test_extract_setlist_does_not_require_setlist_keyword() -> None:
+    comment = "\n".join(f"{minute}:00 曲{minute}" for minute in range(5))
+    assert extract_setlist([comment]) == comment
 
 
 def test_count_rokko_counts_setlist_after_chat() -> None:
@@ -73,8 +79,8 @@ def test_extract_setlist_ignores_ts_inside_words() -> None:
 
 
 def test_extract_setlist_is_deterministic_for_tied_candidates() -> None:
-    first = "TS\n0:01:02 A"
-    second = "TS\n0:01:02 B"
+    first = "\n".join(f"{minute}:00 A" for minute in range(5))
+    second = "\n".join(f"{minute}:00 B" for minute in range(5))
     assert extract_setlist([first, second]) == extract_setlist([second, first])
 
 
