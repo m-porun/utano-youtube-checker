@@ -811,7 +811,7 @@
     "Asyl8EKeAa0": {
       "confirmed": false,
       "count": 0,
-      "setlist_found": false,
+      "setlist_found": true,
       "timestamps": []
     },
     "AwPRaIc1uNE": {
@@ -1293,6 +1293,12 @@
       "count": 0,
       "timestamps": []
     },
+    "H_iisv7cVeE": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": true,
+      "timestamps": []
+    },
     "HhfdgtqiYaI": {
       "confirmed": true,
       "count": 0,
@@ -1326,6 +1332,12 @@
     "I3wQDCUFH7Q": {
       "confirmed": true,
       "count": 0,
+      "timestamps": []
+    },
+    "I6rQYYZL-wY": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": true,
       "timestamps": []
     },
     "IDvj9mNCFIA": {
@@ -3799,6 +3811,12 @@
       "count": 0,
       "timestamps": []
     },
+    "ll1e_bii6Jo": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": true,
+      "timestamps": []
+    },
     "lp2tE4ME_CQ": {
       "confirmed": false,
       "count": 0,
@@ -4688,6 +4706,12 @@
       "timestamps": []
     },
     "wB7-e80EwJk": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": true,
+      "timestamps": []
+    },
+    "wDUsC_8VUAs": {
       "confirmed": false,
       "count": 0,
       "setlist_found": true,
