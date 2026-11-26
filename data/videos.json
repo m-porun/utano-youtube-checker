@@ -1097,12 +1097,6 @@
       "count": 0,
       "timestamps": []
     },
-    "EhuBDjjTHi4": {
-      "confirmed": false,
-      "count": 0,
-      "setlist_found": true,
-      "timestamps": []
-    },
     "EioKH2PLiqo": {
       "confirmed": true,
       "count": 0,
@@ -1759,6 +1753,12 @@
       "timestamps": []
     },
     "NCwEezIFII8": {
+      "confirmed": false,
+      "count": 0,
+      "setlist_found": true,
+      "timestamps": []
+    },
+    "NCwcJaO5rrk": {
       "confirmed": false,
       "count": 0,
       "setlist_found": true,
